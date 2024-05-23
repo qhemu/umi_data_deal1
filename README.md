@@ -56,3 +56,5 @@ degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degu
 python scripts_slam_pipeline/07_generate_replay_buffer.py -o degug_session/dataset.zarr.zip degug_session**
 ```
 *7:所以重点看这个，数据转换＋存储，07_generate_replay_buffer.py*
+
+我保留了umi真实实验设置做参考(转换是没用到的哈)，懂行的可以看下，是否需要ViperX-300的配置改变，需要对标aloha代码中的初始设置一起看，比如scripts_real，umi/real_world，example下的部分。
