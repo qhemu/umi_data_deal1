@@ -15,10 +15,7 @@ import click
 import shutil
 from exiftool import ExifToolHelper
 from umi.common.timecode_util import mp4_get_start_datetime
-'''
-上一个下载的所有示例数据，把目录结构进行整理。
-每个视频都要单独处理，用ExifTool 工具包，提取每个视频的相机序列号+拍摄时间，作为文件夹的名称，如demos文件夹所示
-'''
+
 # %%
 @click.command(help='Session directories. Assumming mp4 videos are in <session_dir>/raw_videos')
 @click.argument('session_dir', nargs=-1)
