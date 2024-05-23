@@ -49,7 +49,7 @@ degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degu
 
 1-pose到joint的转换，里面的constants都是从mobile aloha粘的。（转换方法求大佬们重写）
 
-2-gripper width到aloha的转换，在转换前，可以先打开plot_gripper_width/2看下实际的宽度变化，再看我写的方法。（转换方法求大佬们优化，注释部分是想用滑动窗口，但是有顾虑没用）
+2-gripper width到aloha的转换，在转换前，可以先打开plot_gripper_width/2看下实际的宽度变化，再看我写的方法， 场景比如考虑多次抓取宽度变化,不同skill在一个task中做long-horizon:grasp,holding,place,et的宽度变化。（转换方法求大佬们优化，注释部分是想用滑动窗口，但是有顾虑没用）
 
 
 ```console
