@@ -5,15 +5,7 @@ python scripts_slam_pipeline/06_generate_dataset_plan.py -i data_workspace/cup_i
 # %%
 import sys
 import os
-'''
-1 相机坐标系到夹爪尖坐标系的转换
-2 加载机器人夹爪的校准数据
-3 提取每个视频的元数据
-4 视频文件进行分组
-5 识别每个视频中的夹爪硬件ID
-6 确定每个摄像头在演示中的左右位置
-7 准备模型训练的数据集
-'''
+
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(ROOT_DIR)
 os.chdir(ROOT_DIR)
