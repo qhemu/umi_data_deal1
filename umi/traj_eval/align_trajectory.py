@@ -2,143 +2,78 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-
 import umi.traj_eval.transformations as tfs
-import umi.traj_eval.align_trajectory as align
 
 
-def _getIndices(n_aligned, total_n):
-    if n_aligned == -1:
-        idxs = np.arange(0, total_n)
+def get_best_yaw(C):
+    '''
+    maximize trace(Rz(theta) * C)
+    '''
+    assert C.shape == (3, 3)
+
+    A = C[0, 1] - C[1, 0]
+    B = C[0, 0] + C[1, 1]
+    theta = np.pi / 2 - np.arctan2(B, A)
+
+    return theta
+
+
+def rot_z(theta):
+    R = tfs.rotation_matrix(theta, [0, 0, 1])
+    R = R[0:3, 0:3]
+
+    return R
+
+
+def align_umeyama(model, data, known_scale=False, yaw_only=False):
+    """Implementation of the paper: S. Umeyama, Least-Squares Estimation
+    of Transformation Parameters Between Two Point Patterns,
+    IEEE Trans. Pattern Anal. Mach. Intell., vol. 13, no. 4, 1991.
+
+    model = s * R * data + t
+
+    Input:
+    model -- first trajectory (nx3), numpy array type
+    data -- second trajectory (nx3), numpy array type
+
+    Output:
+    s -- scale factor (scalar)
+    R -- rotation matrix (3x3)
+    t -- translation vector (3x1)
+    t_error -- translational error per point (1xn)
+
+    """
+
+    # substract mean
+    mu_M = model.mean(0)
+    mu_D = data.mean(0)
+    model_zerocentered = model - mu_M
+    data_zerocentered = data - mu_D
+    n = np.shape(model)[0]
+
+    # correlation
+    C = 1.0/n*np.dot(model_zerocentered.transpose(), data_zerocentered)
+    sigma2 = 1.0/n*np.multiply(data_zerocentered, data_zerocentered).sum()
+    U_svd, D_svd, V_svd = np.linalg.linalg.svd(C)
+    D_svd = np.diag(D_svd)
+    V_svd = np.transpose(V_svd)
+
+    S = np.eye(3)
+    if(np.linalg.det(U_svd)*np.linalg.det(V_svd) < 0):
+        S[2, 2] = -1
+
+    if yaw_only:
+        rot_C = np.dot(data_zerocentered.transpose(), model_zerocentered)
+        theta = get_best_yaw(rot_C)
+        R = rot_z(theta)
     else:
-        assert n_aligned <= total_n and n_aligned >= 1
-        idxs = np.arange(0, n_aligned)
-    return idxs
+        R = np.dot(U_svd, np.dot(S, np.transpose(V_svd)))
 
-
-def alignPositionYawSingle(p_es, p_gt, q_es, q_gt):
-    '''
-    calcualte the 4DOF transformation: yaw R and translation t so that:
-        gt = R * est + t
-    '''
-
-    p_es_0, q_es_0 = p_es[0, :], q_es[0, :]
-    p_gt_0, q_gt_0 = p_gt[0, :], q_gt[0, :]
-    g_rot = tfs.quaternion_matrix(q_gt_0)
-    g_rot = g_rot[0:3, 0:3]
-    est_rot = tfs.quaternion_matrix(q_es_0)
-    est_rot = est_rot[0:3, 0:3]
-
-    C_R = np.dot(est_rot, g_rot.transpose())
-    theta = align.get_best_yaw(C_R)
-    R = align.rot_z(theta)
-    t = p_gt_0 - np.dot(R, p_es_0)
-
-    return R, t
-
-
-def alignPositionYaw(p_es, p_gt, q_es, q_gt, n_aligned=1):
-    if n_aligned == 1:
-        R, t = alignPositionYawSingle(p_es, p_gt, q_es, q_gt)
-        return R, t
+    if known_scale:
+        s = 1
     else:
-        idxs = _getIndices(n_aligned, p_es.shape[0])
-        est_pos = p_es[idxs, 0:3]
-        gt_pos = p_gt[idxs, 0:3]
-        _, R, t = align.align_umeyama(gt_pos, est_pos, known_scale=True,
-                                      yaw_only=True)  # note the order
-        t = np.array(t)
-        t = t.reshape((3, ))
-        R = np.array(R)
-        return R, t
+        s = 1.0/sigma2*np.trace(np.dot(D_svd, S))
 
-
-# align by a SE3 transformation
-def alignSE3Single(p_es, p_gt, q_es, q_gt):
-    '''
-    Calculate SE3 transformation R and t so that:
-        gt = R * est + t
-    Using only the first poses of est and gt
-    '''
-
-    p_es_0, q_es_0 = p_es[0, :], q_es[0, :]
-    p_gt_0, q_gt_0 = p_gt[0, :], q_gt[0, :]
-
-    g_rot = tfs.quaternion_matrix(q_gt_0)
-    g_rot = g_rot[0:3, 0:3]
-    est_rot = tfs.quaternion_matrix(q_es_0)
-    est_rot = est_rot[0:3, 0:3]
-
-    R = np.dot(g_rot, np.transpose(est_rot))
-    t = p_gt_0 - np.dot(R, p_es_0)
-
-    return R, t
-
-
-def alignSE3(p_es, p_gt, q_es, q_gt, n_aligned=-1):
-    '''
-    Calculate SE3 transformation R and t so that:
-        gt = R * est + t
-    '''
-    if n_aligned == 1:
-        R, t = alignSE3Single(p_es, p_gt, q_es, q_gt)
-        return R, t
-    else:
-        idxs = _getIndices(n_aligned, p_es.shape[0])
-        est_pos = p_es[idxs, 0:3]
-        gt_pos = p_gt[idxs, 0:3]
-        s, R, t = align.align_umeyama(gt_pos, est_pos,
-                                      known_scale=True)  # note the order
-        t = np.array(t)
-        t = t.reshape((3, ))
-        R = np.array(R)
-        return R, t
-
-
-# align by similarity transformation
-def alignSIM3(p_es, p_gt, q_es, q_gt, n_aligned=-1):
-    '''
-    calculate s, R, t so that:
-        gt = R * s * est + t
-    '''
-    idxs = _getIndices(n_aligned, p_es.shape[0])
-    est_pos = p_es[idxs, 0:3]
-    gt_pos = p_gt[idxs, 0:3]
-    s, R, t = align.align_umeyama(gt_pos, est_pos)  # note the order
-    return s, R, t
-
-
-# a general interface
-def alignTrajectory(p_es, p_gt, q_es, q_gt, method, n_aligned=-1):
-    '''
-    calculate s, R, t so that:
-        gt = R * s * est + t
-    method can be: sim3, se3, posyaw, none;
-    n_aligned: -1 means using all the frames
-    '''
-    assert p_es.shape[1] == 3
-    assert p_gt.shape[1] == 3
-    assert q_es.shape[1] == 4
-    assert q_gt.shape[1] == 4
-
-    s = 1
-    R = None
-    t = None
-    if method == 'sim3':
-        assert n_aligned >= 2 or n_aligned == -1, "sim3 uses at least 2 frames"
-        s, R, t = alignSIM3(p_es, p_gt, q_es, q_gt, n_aligned)
-    elif method == 'se3':
-        R, t = alignSE3(p_es, p_gt, q_es, q_gt, n_aligned)
-    elif method == 'posyaw':
-        R, t = alignPositionYaw(p_es, p_gt, q_es, q_gt, n_aligned)
-    elif method == 'none':
-        R = np.identity(3)
-        t = np.zeros((3, ))
-    else:
-        assert False, 'unknown alignment method'
+    t = mu_M-s*np.dot(R, mu_D)
 
     return s, R, t
-
-
-if __name__ == '__main__':
-    pass
