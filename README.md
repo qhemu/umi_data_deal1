@@ -10,7 +10,7 @@ conda env create -f conda_environment.yaml　（这一步如果太慢，就按�
 
 conda activate umi_data
 ```
-## 得到原始采集视频：
+## 得到原始采集视频做预处理（1-7步follow umi）：
 ```console
 python run_slam_pipeline.py　"umi_data_deal/degug_session"
 ```
@@ -55,7 +55,7 @@ python run_slam_pipeline.py　"umi_data_deal/degug_session"
 
 degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degug_session"的数据了，但是只放了4个视频（1map,1gripper标定，2训练数据），如果想大量训练可以来我这里拷贝，比较大。
 
-接下来单执行07_generate_replay_buffer.py做转换存储就可以了，存储部分暂时不用改，现在写的够用，请大佬们重写转换，
+接下来单执行07_generate_replay_buffer.py做转换存储就可以了，存储部分暂时不用改，现在写的够用，请大佬们重写转换motion_convert（），
 
 2个问题：
 
