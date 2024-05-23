@@ -51,7 +51,11 @@ python run_slam_pipeline.py　"umi_data_deal/degug_session"
 
 
 ## 数据转换
-下载数据到目录中：https://drive.google.com/drive/folders/1U3B7NzntI2jEL2IK7irBgPji_gc30Nkz?usp=drive_link，degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degug_session"的数据了，接下来单执行07_generate_replay_buffer.py做转换．
+下载数据到目录中：https://drive.google.com/drive/folders/1U3B7NzntI2jEL2IK7irBgPji_gc30Nkz?usp=drive_link，
+
+degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degug_session"的数据了，
+
+接下来单执行07_generate_replay_buffer.py做转换存储就可以了，里面也有处理gripper的不同方法，可以打开．
 ```console
 python scripts_slam_pipeline/07_generate_replay_buffer.py -o example_demo_session/dataset.zarr.zip example_demo_session
 ```
