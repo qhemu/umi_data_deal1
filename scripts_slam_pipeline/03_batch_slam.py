@@ -21,12 +21,7 @@ import av
 import numpy as np
 from umi.common.cv_util import draw_predefined_mask
 
-'''
-03是mapping地图视频生成的轨迹信息，04是批量生成任务演示数据的轨迹信息，
-输入：原始mp4视频、上一步生成的map_atlas.osa、imu_data.json
-输出：相机轨迹信息camera_trajectory.csv
-和mapping_camera_trajectory.csv一样的内容
-'''
+
 # %%
 def runner(cmd, cwd, stdout_path, stderr_path, timeout, **kwargs):
     try:
