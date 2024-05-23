@@ -16,11 +16,11 @@ python run_slam_pipeline.py　"umi_data_deal/degug_session"
 ```
 0：所有示例数据目录结构整理：每个视频都要单独处理，用ExifTool 工具包，提取每个视频的相机序列号+拍摄时间，作为文件夹的名称，如demos文件夹所示．
 
-1：提取gopro惯性测量单元数据(imu)，提取方式是拉的docker镜像，直接使用的外部仓库：GitHub - urbste/OpenImuCameraCalibrator: Camera calibration tool，提取结果保存在imu_data.json文件中，总共提取了6种数据：GoPro Tags．
+1：提取gopro惯性测量单元数据(imu)，提取方式是拉的docker镜像，直接使用的外部仓库：GitHub - urbste/OpenImuCameraCalibrator: Camera calibration tool，提取结果保存在imu_data.json文件中，总共提取了6种数据．
 
-2：处理mapping地图视频数据，并生成地图。主要是用Docker来运行外部库ORB_SLAM3(Simultaneous Localization and Mapping，即同时定位与地图构建)
+2：处理mapping地图视频数据，并生成地图。主要是运行外部库ORB_SLAM3(Simultaneous Localization and Mapping，即同时定位与地图构建)
 
-输入：imu_data.json 和 原MP4视频
+输入：imu_data.json 和 原MP4视频．
 
 输出：mapping_camera_trajectory.csv这是SLAM系统生成的相机轨迹文件，通常包含了相机在空间中的位置和方向信息．
 
