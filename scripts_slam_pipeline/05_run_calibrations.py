@@ -14,10 +14,7 @@ import pathlib
 import click
 import subprocess
 
-'''
-SLAM标签校准
-夹爪范围的校准
-'''
+
 # %%
 @click.command()
 @click.argument('session_dir', nargs=-1)
