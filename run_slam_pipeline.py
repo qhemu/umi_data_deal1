@@ -123,16 +123,3 @@ def main(session_dir, calibration_dir):
 ## %%
 if __name__ == "__main__":
     main()
-
-'''
-"umi_data_deal/degug_session"
-
-sudo apt-get update
-sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf　（如果ｕnbuntu有系统问题，可以创建docker，这里偷懒了，没有用docker）
-conda env create -f conda_environment.yaml　（这一步如果太慢，就按作者的推荐来使用Miniforge）
-conda activate umi_data
-关于UMI SLAM
-进入下载的code文件中下载示例数据：
-wget --recursive --no-parent --no-host-directories --cut-dirs=2 --relative --reject="index.html*" https://real.stanford.edu/umi/data/example_demo_session/
-
-'''
