@@ -48,8 +48,6 @@ register_codecs()
 @click.option('-n', '--num_workers', type=int, default=None)
 def main(input, output, out_res, out_fov, compression_level,
          no_mirror, mirror_swap, num_workers):
-
-
     out_res = tuple(int(x) for x in out_res.split(','))  # (224, 224)
     # 根据CPU核心数决定工作线程数，除非已指定
     if num_workers is None:
@@ -69,8 +67,6 @@ def main(input, output, out_res, out_fov, compression_level,
             out_size=out_res,
             out_fov=out_fov  # 解析输出分辨率和视场角
         )
-
-
     # dump lowdim data to replay buffer
     # generate argumnet for videos
     n_grippers = None
@@ -175,12 +171,10 @@ def plot_gripper_width(filename, gripper_widths):
     std_deviation = np.std(gripper_widths)
     min_width = np.min(gripper_widths)
     max_width = np.max(gripper_widths)
-
     print(f"Mean width: {mean_width:.4f}")
     print(f"Standard Deviation: {std_deviation:.4f}")
     print(f"Min width: {min_width:.4f}")
     print(f"Max width: {max_width:.4f}")
-
     plt.figure(figsize=(10, 5))
     plt.plot(gripper_widths, label='Gripper Width')
     plt.title('Gripper Width Over Time')
@@ -189,7 +183,8 @@ def plot_gripper_width(filename, gripper_widths):
     plt.legend()
     plt.show()
     # plt.savefig(filename)
-    # plt.close()  # 关闭图形，释放资源
+    # plt.close() 
+
 
 def plot_gripper_width2(filename, widths):
     # 计算百分位数作为阈值
@@ -210,27 +205,7 @@ def plot_gripper_width2(filename, widths):
     plt.ylabel('Frequency')
     plt.show()
     # plt.savefig(filename)
-    # plt.close()  # 关闭图形，释放资源
-
-def plot_gripper_width2(widths):
-    # 计算百分位数作为阈值
-    tight_state_threshold = np.percentile(widths, 10)  # 取最小10%的值作为紧夹状态的上限
-    partial_open_threshold = np.percentile(widths, 50)  # 取中位数作为部分开放状态的上限
-    open_state_threshold = np.percentile(widths, 90)  # 取最大10%的值作为开放状态的下限
-    tight_state = widths[widths <= tight_state_threshold]
-    partial_open_state = widths[(widths > tight_state_threshold) & (widths < open_state_threshold)]
-    open_state = widths[widths >= open_state_threshold]
-    plt.figure(figsize=(10, 5))
-    # plt.plot(widths, label='Gripper Width')
-    plt.hist(widths, bins=30, alpha=0.7, label='All Widths')
-    plt.axvline(tight_state_threshold, color='r', linestyle='dashed', linewidth=1, label='Tight State Threshold')
-    plt.axvline(partial_open_threshold, color='g', linestyle='dashed', linewidth=1, label='Partial Open Threshold')
-    plt.axvline(open_state_threshold, color='b', linestyle='dashed', linewidth=1, label='Open State Threshold')
-    plt.legend()
-    plt.title('Width Distribution with Dynamic Thresholds')
-    plt.xlabel('Width')
-    plt.ylabel('Frequency')
-    plt.show()
+    # plt.close()  
 
 
 def motion_convert(qposes, gripper_widths):
@@ -255,8 +230,8 @@ def motion_convert(qposes, gripper_widths):
     return combined_result, actions, nor_gripper_widths
 
 def video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, mp4_path, tasks):
-    pkl_path = os.path.join(os.path.dirname(mp4_path), 'tag_detection.pkl')  # '/home/xiuxiu/interbotix_ws/src/universal_manipulation_interface/doll_basket_session/demos/demo_C3461324973256_2024.05.10_21.59.28.773017/tag_detection.pkl'
-    tag_detection_results = pickle.load(open(pkl_path, 'rb'))  #
+    pkl_path = os.path.join(os.path.dirname(mp4_path), 'tag_detection.pkl') 
+    tag_detection_results = pickle.load(open(pkl_path, 'rb'))  
     resize_tf = get_image_transform(
         in_res=(iw, ih),
         out_res=out_res
@@ -273,7 +248,7 @@ def video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, 
         camera_name = 'cam_right_wrist'
     curr_task_idx = 0
 
-    # image_dict = {}  # 创建字典来存储每帧的图像
+    # image_dict = {} 
     image_dict = defaultdict(dict)
     with av.open(mp4_path) as container:
         in_stream = container.streams.video[0]
@@ -294,7 +269,6 @@ def video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, 
 
                 # do current task
                 img = frame.to_ndarray(format='rgb24')  # (2028,2704,3)
-                # inpaint tags 修补标签
                 this_det = tag_detection_results[frame_idx]
                 all_corners = [x['corners'] for x in this_det['tag_dict'].values()]
                 for corners in all_corners:
@@ -322,8 +296,8 @@ def video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, 
                     curr_task_idx += 1
             else:
                 assert False
-
     return image_dict, camera_idx
+
 
 def gripper_convert(gripper_widths):
     # gripper_nor = MASTER_GRIPPER_POSITION_NORMALIZE_FN()
@@ -349,12 +323,14 @@ def gripper_convert(gripper_widths):
     # normalized_widths = gripper_widths / max_width
     return normalized_widths
 
+
 def gripper_convert2(gripper_widths):
     # 计算宽度的变化（差分）
     width_changes = np.diff(gripper_widths)
     # 生成0/1向量，正变化（增加）为1，负变化（减少）为0
     binary_states = (width_changes > 0).astype(int)
     return binary_states
+
 
 def apply_hysteresis(widths, pickup_threshold=0.085, place_threshold=0.075):
     state = 'waiting'  # 初始状态为等待
@@ -368,6 +344,7 @@ def apply_hysteresis(widths, pickup_threshold=0.085, place_threshold=0.075):
             state = 'picking'  # 可能再次进入拿起状态
         states.append(state)
     return states
+
 
 def smooth_and_threshold(widths, pickup_threshold=0.085, place_threshold=0.075):
     state = 0  # 0 for closed, 1 for open
@@ -397,25 +374,19 @@ def delayed_state_change(widths, pickup_threshold=0.085, place_threshold=0.075):
         states.append(state)
     return states
 
+
 def load_h5file(observations, actions):
     # for mp4_path, tasks in vid_args:
     import h5py
     for key, value in observations.items():  # 在单个观察中循环pos，这里默认一个机械臂带一个腕式视频
         dataset_path = f'debug_session/debug_session/episode_{key}.hdf5'
         with h5py.File(dataset_path, 'w') as root:
-            # print(value)
-            # 设置文件属性
-            root.attrs['sim'] = True  # 或 False，根据您的需要
-            root.attrs['compress'] = False  # 根据需要设置
-            # 创建 observations 组
             obs_grp = root.create_group('observations')
-            # 保存 qpos 和 qvel
             obs_grp.create_dataset('qpos', data=value['qpos'])
-            obs_grp.create_dataset('qvel', data=value['qvel'])
+            # obs_grp.create_dataset('qvel', data=value['qvel'])
             act_grp = root.create_group('action')
             act_grp.create_dataset('action', data=actions[key]['action'])
 
-            # 创建 images 子组
             img_grp = obs_grp.create_group('images')
             # print(value['images'])
             for cam_name in value['images'].keys():
@@ -425,15 +396,11 @@ def load_h5file(observations, actions):
                     # print(f"Camera name: {cam_name}, Type: {type(cam_name)}")
                     # print(img_data.shape)
                     list_img.append(img_data)
-                    # 假设 img_data 是 numpy 数组; 如果不是，需要先转换成 numpy 数组
-                # 堆叠图像数据
-                stacked_images = np.stack(list_img, axis=0)  # 在新的轴0上堆叠
+                stacked_images = np.stack(list_img, axis=0) 
                 print(stacked_images.shape)
                 img_grp.create_dataset(cam_name, data=stacked_images)
-            # 保存动作
         print(f'episode_{key}.hdf5')
     print("HDF5 文件已创建并写入数据。")
-
 
 
 def calculate_thresholds(data):
@@ -548,7 +515,3 @@ if __name__ == "__main__":
         (x - PUPPET_GRIPPER_JOINT_CLOSE) / (PUPPET_GRIPPER_JOINT_OPEN - PUPPET_GRIPPER_JOINT_CLOSE))
     main()
 
-'''
-(umi)$ python scripts_slam_pipeline/07_generate_replay_buffer.py 
--o example_demo_session/dataset.zarr.zip example_demo_session
-'''
