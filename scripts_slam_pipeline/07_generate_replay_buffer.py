@@ -34,19 +34,6 @@ from imagecodecs_numcodecs import register_codecs
 register_codecs()
 # from umi.common.pose_util import pose_to_mat, mat_to_pose10d
 # from umi.umi_dataset_revise import forward_kinematics, inverse_kinematics,forward_kinematics
-'''
-数据集转成模型训练的格式
-1. 数据存储在ReplayBuffer对象中
-2 视频帧处理
-2.1 转为RGB
-2.2 标记检测
-2.3 遮罩
-2.4 鱼眼镜头
-2.5 镜像处理
-2.6 压缩图像
-4.3.3 最终数据结构
-'''
-
 
 # %%
 @click.command()
