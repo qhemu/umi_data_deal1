@@ -1,7 +1,7 @@
 # umi_data_deal1
 
-构建环境：
-
+## 构建环境：
+```console
 sudo apt-get update
 
 sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf　（如果ｕnbuntu有系统问题，可以创建docker，这里偷懒了，没有用docker）
@@ -9,10 +9,11 @@ sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3 patchelf　（如果
 conda env create -f conda_environment.yaml　（这一步如果太慢，就按作者的推荐来使用Miniforge）
 
 conda activate umi_data
-
-得到原始采集视频：
+```
+## 得到原始采集视频：
+```console
 python run_slam_pipeline.py　"umi_data_deal/degug_session"
-
+```
 １：所有示例数据目录结构整理：每个视频都要单独处理，用ExifTool 工具包，提取每个视频的相机序列号+拍摄时间，作为文件夹的名称，如demos文件夹所示．
 
 ２：提取gopro惯性测量单元数据(imu)，提取方式是拉的docker镜像，直接使用的外部仓库：GitHub - urbste/OpenImuCameraCalibrator: Camera calibration tool，提取结果保存在imu_data.json文件中，总共提取了6种数据：GoPro Tags．
@@ -49,8 +50,9 @@ python run_slam_pipeline.py　"umi_data_deal/degug_session"
 准备模型训练的数据集
 
 
+## 数据转换
 目录中的degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degug_session"的数据了，接下来单执行07_generate_replay_buffer.py做转换．
-
+```console
 python scripts_slam_pipeline/07_generate_replay_buffer.py -o example_demo_session/dataset.zarr.zip example_demo_session
-
+```
 *８:所以重点看这个，数据转换＋存储，07_generate_replay_buffer.py*
