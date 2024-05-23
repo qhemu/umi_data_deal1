@@ -232,14 +232,7 @@ def plot_gripper_width2(widths):
     plt.ylabel('Frequency')
     plt.show()
 
-def motion_convert(qposes, gripper_widths):
-    nor_gripper_widths = process_data(np.array(gripper_widths))  # １开０关
-    qpos = MASTER_POS2JOINT(qposes)  # 空间位置到关节位置的转换
-    result = np.column_stack((qpos, nor_gripper_widths))
-    new_array = np.zeros_like(result)
-    combined_result = np.concatenate((new_array, result), axis=1)
-    actions = MASTER_GRIPPER_JOINT_NORMALIZE_FN(combined_result)
-    return combined_result*0.1, actions*0.1, nor_gripper_widths
+
 def motion_convert(qposes, gripper_widths):
     # # initial_guess = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1])--
     # initial_guess = [0, -0.96, 1.16, 0, -0.3, 0]
@@ -259,7 +252,7 @@ def motion_convert(qposes, gripper_widths):
     # actions = MASTER_JOINT2POS(demo_end_pose)
     # actions = MASTER_GRIPPER_JOINT_NORMALIZE_FN(qpos)
     actions = MASTER_GRIPPER_JOINT_NORMALIZE_FN(combined_result)
-    return combined_result*0.1, actions*0.1, nor_gripper_widths
+    return combined_result, actions, nor_gripper_widths
 
 def video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, mp4_path, tasks):
     pkl_path = os.path.join(os.path.dirname(mp4_path), 'tag_detection.pkl')  # '/home/xiuxiu/interbotix_ws/src/universal_manipulation_interface/doll_basket_session/demos/demo_C3461324973256_2024.05.10_21.59.28.773017/tag_detection.pkl'
