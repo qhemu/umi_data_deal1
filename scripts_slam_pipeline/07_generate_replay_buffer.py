@@ -46,6 +46,7 @@ register_codecs()
 @click.option('-nm', '--no_mirror', is_flag=True, default=False, help="Disable mirror observation by masking them out")
 @click.option('-ms', '--mirror_swap', is_flag=True, default=False)
 @click.option('-n', '--num_workers', type=int, default=None)
+
 def main(input, output, out_res, out_fov, compression_level,
          no_mirror, mirror_swap, num_workers):
     out_res = tuple(int(x) for x in out_res.split(','))  # (224, 224)
