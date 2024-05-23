@@ -53,9 +53,14 @@ python run_slam_pipeline.py　"umi_data_deal/degug_session"
 ## 数据转换
 下载数据到目录中：https://drive.google.com/drive/folders/1U3B7NzntI2jEL2IK7irBgPji_gc30Nkz?usp=drive_link，
 
-degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degug_session"的数据了，
+degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degug_session"的数据了，但是只放了4个视频（1map,1gripper标定，2训练数据），如果想大量训练可以来我这里拷贝，比较大。
 
-接下来单执行07_generate_replay_buffer.py做转换存储就可以了，里面也有处理gripper的不同方法，可以打开．
+接下来单执行07_generate_replay_buffer.py做转换存储就可以了，存储部分暂时不用改，现在写的够用，请大佬们重写转换，
+2个问题：
+1-pose到joint的转换，里面的constants都是从mobile aloha粘的。（转换方法求大佬们重写）
+2-gripper width到aloha的转换，在转换前，可以先打开plot_gripper_width/2看下，实际的宽度变化，再看我写的方法。（转换方法求大佬们优化，注释部分是想用滑动窗口，但是有顾虑没用）
+
+
 ```console
 python scripts_slam_pipeline/07_generate_replay_buffer.py -o example_demo_session/dataset.zarr.zip example_demo_session
 ```
