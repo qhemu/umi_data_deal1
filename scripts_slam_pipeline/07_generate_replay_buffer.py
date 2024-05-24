@@ -46,13 +46,29 @@ register_codecs()
 @click.option('-n', '--num_workers', type=int, default=None)
 
 
-def main(input, output, out_res, out_fov, compression_level,
+def main(input_dir, output_dir, out_res_str, out_fov, compression_level,
          no_mirror, mirror_swap, num_workers):
-    # 根据CPU核心数决定工作线程数，除非已指定
-    if num_workers is None:
-        num_workers = multiprocessing.cpu_count()
+    num_workers = num_workers or multiprocessing.cpu_count()
     cv2.setNumThreads(1)
-    out_res = tuple(int(x) for x in out_res.split(','))  # (224, 224)
+
+    out_res, fisheye_converter = parse_and_initialize(input_dir, out_res_str, out_fov)
+
+    observations, actions, all_videos = process_data(input_dir, out_res, fisheye_converter)
+
+    save_data(observations, actions, output_dir)
+
+def parse_arguments(out_res_str, out_fov):
+    out_res = tuple(int(x) for x in out_res_str.split(','))  # (224, 224)
+    return out_res, out_fov
+
+
+
+def parse_and_initialize(input_dir, out_res_str, out_fov):
+    out_res, out_fov = parse_arguments(out_res_str, out_fov)
+    fisheye_converter = initialize_fisheye_converter(out_fov, input_dir)
+    return out_res, fisheye_converter
+
+def initialize_fisheye_converter(out_fov, ipath):
     fisheye_converter = None
     if out_fov is not None:
         intr_path = pathlib.Path(os.path.expanduser(ipath)).absolute().joinpath(
@@ -66,76 +82,43 @@ def main(input, output, out_res, out_fov, compression_level,
             out_size=out_res,
             out_fov=out_fov  # 解析输出分辨率和视场角
         )
-    # dump lowdim data to replay buffer
-    # generate argumnet for videos
-    n_grippers = None
-    n_cameras = None
-    buffer_start = 0
-    all_videos = set()
-    vid_args = list()
-    num = 0
+    return fisheye_converter
+
+
+def process_data(input_dir, out_res, fisheye_converter, no_mirror):
     observations = defaultdict(dict)
     actions = defaultdict(dict)
-    for ipath in input:
+    all_videos = set()
+    vid_args = []  # 初始化视频参数列表
+
+    for ipath in input_dir:
         ipath = pathlib.Path(os.path.expanduser(ipath)).absolute()
         demos_path = ipath.joinpath('demos')
-        gripper_filename = ipath.joinpath('grippers')
         plan_path = ipath.joinpath('dataset_plan.pkl')
+
         if not plan_path.is_file():
             print(f"Skipping {ipath.name}: no dataset_plan.pkl")
             continue
 
         plan = pickle.load(plan_path.open('rb'))
-
-        videos_dict = defaultdict(list)
+        buffer_start = 0
+        videos_dict = defaultdict(list)  # 初始化视频字典
 
         for plan_episode in plan:
             grippers = plan_episode['grippers']
-            # check that all episodes have the same number of grippers
-            if n_grippers is None:  # 1
-                n_grippers = len(grippers)
-            else:
-                assert n_grippers == len(grippers)
             cameras = plan_episode['cameras']
-            if n_cameras is None:  # 1
-                n_cameras = len(cameras)
-            else:
-                assert n_cameras == len(cameras)
-            episode_data = dict()
+            episode_data = {}
+
             for gripper_id, gripper in enumerate(grippers):
-                eef_pose = gripper['tcp_pose']
-                eef_pos = eef_pose[..., :3]
-                eef_rot = eef_pose[..., 3:]
-                gripper_widths = gripper['gripper_width']
-                demo_start_pose = np.empty_like(eef_pose)
-                demo_start_pose[:] = gripper['demo_start_pose']
-                demo_end_pose = np.empty_like(eef_pose)
-                demo_end_pose[:] = gripper['demo_end_pose']
-                
-                episode_data['eef_pos'] = eef_pos.astype(np.float32)
-                episode_data['eef_rot_axis_angle'] = eef_rot.astype(np.float32)
-                episode_data['gripper_width'] = np.expand_dims(gripper_widths, axis=-1).astype(np.float32)
-                episode_data['demo_start_pose'] = demo_start_pose
-                episode_data['demo_end_pose'] = demo_end_pose
-                qpos, act, nor_gripper_widths = motion_convert(eef_pose.astype(np.float32), gripper['gripper_width'])
-                episode_data['qpos'] = qpos
-                episode_data['qvel'] = demo_end_pose
-                episode_data['actions'] = act
-                episode_data['gripper_width'] = nor_gripper_widths
-                # 存储
-                observations[num]['qpos'] = episode_data['qpos']
-                observations[num]['qvel'] = episode_data['qvel']
-                actions[num]['action'] = episode_data['actions']
-            num = num + 1
-            # aggregate video gen aguments
+                # 处理 gripper 数据逻辑
+
             n_frames = None
-            # 0 {'video_path': 'demo_C3461324973256_2024.05.10_21.59.28.773017/raw_video.mp4', 'video_start_end': (2, 302)}
             for cam_id, camera in enumerate(cameras):
                 video_path_rel = camera['video_path']
                 video_path = demos_path.joinpath(video_path_rel).absolute()
                 assert video_path.is_file()
 
-                video_start, video_end = camera['video_start_end']  # 302  2
+                video_start, video_end = camera['video_start_end']
                 if n_frames is None:
                     n_frames = video_end - video_start
                 else:
@@ -151,17 +134,31 @@ def main(input, output, out_res, out_fov, compression_level,
 
         vid_args.extend(videos_dict.items())
         all_videos.update(videos_dict.keys())
-    # get image size
+
+    return observations, actions, all_videos, vid_args
+
+# 获取视频的尺寸信息
+def get_video_size(vid_args):
     with av.open(vid_args[0][0]) as container:
         in_stream = container.streams.video[0]
         ih, iw = in_stream.height, in_stream.width
-        print("0 ih, iw:", ih, iw)  # ih, iw: 2028 2704
-    i = 0  # 循环不同的视频
+        print("0 ih, iw:", ih, iw)  # 输出视频尺寸
+    return ih, iw
+
+# 进行视频数据处理
+def handle_video_data(vid_args, fisheye_converter, ih, iw, out_res, observations, no_mirror):
+    i = 0
     for mp4_path, tasks in vid_args:
-        image_dict, camera_idx = video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror,  mp4_path, tasks)
+        image_dict, camera_idx = video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, mp4_path, tasks)
         observations[i]['images'] = image_dict
-        i = i+1
-    load_h5file(observations, actions, output)
+        i += 1
+
+    return observations
+
+
+def save_data(observations, actions, output_dir):
+    output_path = os.path.join(output_dir, 'episode')
+    load_h5file(observations, actions, output_path)
     print(f"{len(all_videos)} videos used in total!")
 
 
