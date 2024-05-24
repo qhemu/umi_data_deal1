@@ -1,60 +1,58 @@
-# %%
-import sys
+import concurrent.futures
+import json
+import multiprocessing
 import os
-import matplotlib.pyplot as plt
-# from common.normalize_util import (
-#     array_to_stats, concatenate_normalizer, get_identity_normalizer_from_stat,
-#     get_image_identity_normalizer, get_range_normalizer_from_stat)
+import pathlib
+import pickle
+import sys
+
+# work dir and add to sys path
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(ROOT_DIR)
 os.chdir(ROOT_DIR)
+
 from collections import defaultdict
-# %%
-import json
-import pathlib
-import click
-import zarr
-import pickle
-import numpy as np
-import cv2
-import av
-import multiprocessing
-import concurrent.futures
 from tqdm import tqdm
-from collections import defaultdict
+
+import av
+import click
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import zarr
+
 from umi.common.cv_util import (
     parse_fisheye_intrinsics,
     FisheyeRectConverter,
-    get_image_transform, 
+    get_image_transform,
     draw_predefined_mask,
     inpaint_tag,
     get_mirror_crop_slices
 )
 from imagecodecs_numcodecs import register_codecs
-register_codecs()
-# from umi.common.pose_util import pose_to_mat, mat_to_pose10d
-# from umi.umi_dataset_revise import forward_kinematics, inverse_kinematics,forward_kinematics
 
-# %%
+# register codecs
+register_codecs()
+
+# command line arguments
 @click.command()
 @click.argument('input', nargs=-1)
 @click.option('-o', '--output', required=True, help='Zarr path')
-# @click.option('-or', '--out_res', type=str, default='224,224')
-@click.option('-or', '--out_res', type=str, default='896,896')  # init ih, iw: 2028 2704
+@click.option('-or', '--out_res', type=str, default='896,896')  # init ih, iw: 2028 2704， default='224,224'
 @click.option('-of', '--out_fov', type=float, default=None)
 @click.option('-cl', '--compression_level', type=int, default=99)
 @click.option('-nm', '--no_mirror', is_flag=True, default=False, help="Disable mirror observation by masking them out")
 @click.option('-ms', '--mirror_swap', is_flag=True, default=False)
 @click.option('-n', '--num_workers', type=int, default=None)
 
+
 def main(input, output, out_res, out_fov, compression_level,
          no_mirror, mirror_swap, num_workers):
-    out_res = tuple(int(x) for x in out_res.split(','))  # (224, 224)
     # 根据CPU核心数决定工作线程数，除非已指定
     if num_workers is None:
         num_workers = multiprocessing.cpu_count()
     cv2.setNumThreads(1)
-
+    out_res = tuple(int(x) for x in out_res.split(','))  # (224, 224)
     fisheye_converter = None
     if out_fov is not None:
         intr_path = pathlib.Path(os.path.expanduser(ipath)).absolute().joinpath(
@@ -163,7 +161,7 @@ def main(input, output, out_res, out_fov, compression_level,
         image_dict, camera_idx = video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror,  mp4_path, tasks)
         observations[i]['images'] = image_dict
         i = i+1
-    load_h5file(output, observations, actions)
+    load_h5file(observations, actions, output)
     print(f"{len(all_videos)} videos used in total!")
 
 
@@ -206,7 +204,7 @@ def plot_gripper_width2(filename, widths):
     plt.ylabel('Frequency')
     plt.show()
     # plt.savefig(filename)
-    # plt.close()  
+    # plt.close()
 
 
 def motion_convert(qposes, gripper_widths):
@@ -231,8 +229,8 @@ def motion_convert(qposes, gripper_widths):
     return combined_result, actions, nor_gripper_widths
 
 def video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, mp4_path, tasks):
-    pkl_path = os.path.join(os.path.dirname(mp4_path), 'tag_detection.pkl') 
-    tag_detection_results = pickle.load(open(pkl_path, 'rb'))  
+    pkl_path = os.path.join(os.path.dirname(mp4_path), 'tag_detection.pkl')
+    tag_detection_results = pickle.load(open(pkl_path, 'rb'))
     resize_tf = get_image_transform(
         in_res=(iw, ih),
         out_res=out_res
@@ -249,7 +247,7 @@ def video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror, 
         camera_name = 'cam_right_wrist'
     curr_task_idx = 0
 
-    # image_dict = {} 
+    # image_dict = {}
     image_dict = defaultdict(dict)
     with av.open(mp4_path) as container:
         in_stream = container.streams.video[0]
@@ -376,7 +374,8 @@ def delayed_state_change(widths, pickup_threshold=0.085, place_threshold=0.075):
     return states
 
 
-def load_h5file(output, observations, actions):
+def load_h5file(observations, actions, output_path='debug_session/debug_session/'):
+    # for mp4_path, tasks in vid_args:
     import h5py
     directory = output + output
     if not os.path.exists(directory):
@@ -385,7 +384,7 @@ def load_h5file(output, observations, actions):
     else:
         print(f"Directory '{directory}' already exists.")
     for key, value in observations.items():  # 在单个观察中循环pos，这里默认一个机械臂带一个腕式视频
-        dataset_path = directory + f'episode_{key}.hdf5'
+        dataset_path = os.path.join(output_path, f'episode_{key}.hdf5')
         with h5py.File(dataset_path, 'w') as root:
             obs_grp = root.create_group('observations')
             obs_grp.create_dataset('qpos', data=value['qpos'])
