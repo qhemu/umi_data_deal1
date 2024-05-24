@@ -53,7 +53,7 @@ degug_session是已经执行完python run_slam_pipeline.py　"umi_data_deal/degu
 
 
 ```console
-python scripts_slam_pipeline/07_generate_replay_buffer.py -o degug_session/dataset.zarr.zip degug_session
+python scripts_slam_pipeline/07_generate_replay_buffer.py -o debug_session/ debug_session
 ```
 *7:所以重点看这个，数据转换＋存储，07_generate_replay_buffer.py*
 
