@@ -377,7 +377,7 @@ def delayed_state_change(widths, pickup_threshold=0.085, place_threshold=0.075):
 
 def load_h5file(output, observations, actions):
     import h5py
-    directory = output + f'debug_session/'
+    directory = output + output
     if not os.path.exists(directory):
         os.makedirs(directory)
         print(f"Directory '{directory}' was created.")
