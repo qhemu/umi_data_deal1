@@ -162,7 +162,7 @@ def main(input, output, out_res, out_fov, compression_level,
         image_dict, camera_idx = video_to_zarr2(fisheye_converter, ih, iw, out_res, observations, no_mirror,  mp4_path, tasks)
         observations[i]['images'] = image_dict
         i = i+1
-    load_h5file(observations, actions)
+    load_h5file(output, observations, actions)
     print(f"{len(all_videos)} videos used in total!")
 
 
@@ -375,11 +375,16 @@ def delayed_state_change(widths, pickup_threshold=0.085, place_threshold=0.075):
     return states
 
 
-def load_h5file(observations, actions):
-    # for mp4_path, tasks in vid_args:
+def load_h5file(output, observations, actions):
     import h5py
+    directory = output + f'debug_session/'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        print(f"Directory '{directory}' was created.")
+    else:
+        print(f"Directory '{directory}' already exists.")
     for key, value in observations.items():  # 在单个观察中循环pos，这里默认一个机械臂带一个腕式视频
-        dataset_path = f'debug_session/debug_session/episode_{key}.hdf5'
+        dataset_path = directory + f'episode_{key}.hdf5'
         with h5py.File(dataset_path, 'w') as root:
             obs_grp = root.create_group('observations')
             obs_grp.create_dataset('qpos', data=value['qpos'])
