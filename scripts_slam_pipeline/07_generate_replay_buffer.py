@@ -641,8 +641,8 @@ def load_h5file(output, observations, actions):
             root.attrs['compress'] = False
             obs_grp = root.create_group('observations')
             obs_grp.create_dataset('qpose', data=value['qpose'])
-            obs_grp.create_dataset('qpos', data[value['qpos']])
-            obs_grp.create_dataset('qvel', data[value['qvel']])
+            obs_grp.create_dataset('qpos', data=value['qpos'])
+            obs_grp.create_dataset('qvel', data=value['qvel'])
             act_grp = root.create_group('action')
             act_grp.create_dataset('action', data=actions[key]['action'])
 
