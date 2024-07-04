@@ -1,5 +1,5 @@
 """
-python scripts_slam_pipeline/03_batch_slam.py -i data_workspace/fold_cloth_20231214/demos
+python scripts_slam_pipeline/03_batch_slam.py -i data/dataset/demos
 """
 # %%
 import sys
@@ -21,11 +21,17 @@ import av
 import numpy as np
 from umi.common.cv_util import draw_predefined_mask
 
-
+'''
+这个和上一步一样，上一步是mapping地图视频生成的轨迹信息，这步是批量生成任务演示数据的轨迹信息，
+输入：原始mp4视频、上一步生成的map_atlas.osa、imu_data.json
+输出：相机轨迹信息camera_trajectory.csv
+和mapping_camera_trajectory.csv一样的内容
+注意：生成轨迹不包括夹爪校准视频，也不生成map_atlas.osa
+'''
 # %%
 def runner(cmd, cwd, stdout_path, stderr_path, timeout, **kwargs):
     try:
-        return subprocess.run(cmd,                       
+        return subprocess.run(cmd,
             cwd=str(cwd),
             stdout=stdout_path.open('w'),
             stderr=stderr_path.open('w'),
@@ -128,7 +134,7 @@ def main(input_dir, map_path, docker_image, num_workers, max_lost_frames, timeou
 
                 if len(futures) >= num_workers:
                     # limit number of inflight tasks
-                    completed, futures = concurrent.futures.wait(futures, 
+                    completed, futures = concurrent.futures.wait(futures,
                         return_when=concurrent.futures.FIRST_COMPLETED)
                     pbar.update(len(completed))
 
@@ -139,8 +145,8 @@ def main(input_dir, map_path, docker_image, num_workers, max_lost_frames, timeou
             completed, futures = concurrent.futures.wait(futures)
             pbar.update(len(completed))
 
-    print("Done! Result:")
-    print([x.result() for x in completed])
+    print("Done!")
+    # print([x.result() for x in completed])
 
 # %%
 if __name__ == "__main__":

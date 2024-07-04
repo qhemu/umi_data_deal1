@@ -1,21 +1,15 @@
 """
-python scripts_slam_pipeline/05_run_calibrations.py data_workspace/cup_in_the_wild/20240105_zhenjia_packard_2nd_conference_room
+This script runs SLAM tag and gripper range calibrations for specified session directories.
+It processes video directories, generates calibration files, and ensures that the necessary input files are present.
+
+Usage:
+    python scripts_slam_pipeline/05_run_calibrations.py data/dataset/raw_videos
 """
-# %%
-import sys
-import os
-
-ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
-sys.path.append(ROOT_DIR)
-os.chdir(ROOT_DIR)
-
-# %%
 import pathlib
 import click
 import subprocess
+from rich import print
 
-
-# %%
 @click.command()
 @click.argument('session_dir', nargs=-1)
 def main(session_dir):
@@ -23,21 +17,29 @@ def main(session_dir):
     
     for session in session_dir:
         session = pathlib.Path(session)
+        print(f'[blue]Session path:[/blue] {session}')
         demos_dir = session.joinpath('demos')
+        print(f'[blue]Demos path:[/blue] {demos_dir}')
         mapping_dir = demos_dir.joinpath('mapping')
+        print(f'[blue]Mapping path:[/blue] {mapping_dir}')
         slam_tag_path = mapping_dir.joinpath('tx_slam_tag.json')
-        # run slam tag calibration
+        print(f'[blue]SLAM tag path:[/blue] {slam_tag_path}')
+            
+        # Run SLAM tag calibration
         script_path = script_dir.joinpath('calibrate_slam_tag.py')
-        assert script_path.is_file()
+        print(f'[blue]Script path (calibrate_slam_tag.py):[/blue] {script_path}')
+        assert script_path.is_file(), f"[red]Script file {script_path} does not exist.[/red]"
+        
         tag_path = mapping_dir.joinpath('tag_detection.pkl')
-        print(tag_path)
-
-        assert tag_path.is_file()
+        print(f'[blue]Tag path (tag_detection.pkl):[/blue] {tag_path}')
+        assert tag_path.is_file(), f"[red]Tag file {tag_path} does not exist.[/red]"
+        
         csv_path = mapping_dir.joinpath('camera_trajectory.csv')
+        print(f'[blue]CSV path (camera_trajectory.csv):[/blue] {csv_path}')
         if not csv_path.is_file():
             csv_path = mapping_dir.joinpath('mapping_camera_trajectory.csv')
-            print("camera_trajectory.csv not found! using mapping_camera_trajectory.csv")
-        assert csv_path.is_file()
+            print("[yellow]camera_trajectory.csv not found! Using mapping_camera_trajectory.csv[/yellow]")
+        assert csv_path.is_file(), f"[red]CSV file {csv_path} does not exist.[/red]"
         
         cmd = [
             'python', str(script_path),
@@ -48,14 +50,15 @@ def main(session_dir):
         ]
         subprocess.run(cmd)
         
-        # run gripper range calibration
+        # Run gripper range calibration
         script_path = script_dir.joinpath('calibrate_gripper_range.py')
-        assert script_path.is_file()
+        print(f'[blue]Script path (calibrate_gripper_range.py):[/blue] {script_path}')
+        assert script_path.is_file(), f"[red]Script file {script_path} does not exist.[/red]"
         
         for gripper_dir in demos_dir.glob("gripper_calibration*"):
             gripper_range_path = gripper_dir.joinpath('gripper_range.json')
             tag_path = gripper_dir.joinpath('tag_detection.pkl')
-            assert tag_path.is_file()
+            assert tag_path.is_file(), f"[red]Tag file {tag_path} does not exist in {gripper_dir}.[/red]"
             cmd = [
                 'python', str(script_path),
                 '--input', str(tag_path),
@@ -63,7 +66,5 @@ def main(session_dir):
             ]
             subprocess.run(cmd)
 
-            
-# %%
 if __name__ == "__main__":
     main()
