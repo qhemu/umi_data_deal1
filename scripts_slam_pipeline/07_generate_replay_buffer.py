@@ -2,7 +2,6 @@
 Usage:
     python scripts_slam_pipeline/07_generate_replay_buffer.py -o output/dir input/dir
 '''
-
 import sys
 import os
 import json
