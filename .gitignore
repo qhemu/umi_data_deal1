@@ -162,3 +162,7 @@ cython_debug/
 
 # Dataset folder
 data/
+
+# diffusion policy
+diffusion_policy
+diffusion_policy/*
