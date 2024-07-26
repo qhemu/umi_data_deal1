@@ -3,7 +3,7 @@ This script generates a dataset plan for training models from video recordings o
 It processes videos, extracts metadata, identifies gripper hardware IDs, and prepares the dataset for model training.
 
 Usage:
-    python scripts_slam_pipeline/06_generate_dataset_plan.py -i data_workspace/cup_in_the_wild/20240105_zhenjia_packard_2nd_conference_room
+    python scripts_slam_pipeline/06_generate_dataset_plan.py -i data/dataset
 """
 
 import os
@@ -627,8 +627,12 @@ def main(input, output, tcp_offset, tx_slam_tag,
     print(f"[blue]Dropped camera count: {dropped_camera_count}[/blue]")
     print(f"[blue]Dropped demos: {n_dropped_demos}[/blue]")
 
-    with open(output, 'wb') as f:
-        pickle.dump(all_plans, f)
+    try:
+        with open(output, 'wb') as f:
+            pickle.dump(all_plans, f)
+        print(f"[blue]dataset_plan.pkl successfully written to {output}[/blue]")
+    except Exception as e:
+        print(f"[red]Failed to write dataset_plan.pkl: {e}[/red]")
 
 if __name__ == "__main__":
     main()

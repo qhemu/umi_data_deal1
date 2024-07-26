@@ -3,6 +3,7 @@ This file is using calculus of differences ways to generate camera trajectory.
 '''
 import math
 import csv
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -75,7 +76,7 @@ def process_csv(input_csv, output_csv, arm_interface, use_differential_kinematic
                 # console.print(f"Processed {index + 1}/{df.shape[0]} rows")
                 pass
 
-            # 写入每一行的结果
+            # write result
             writer.writerow([x, y, z, roll, pitch, yaw, joint_angles.tolist(), success])
 
     return success_points, failure_points
@@ -335,12 +336,11 @@ _NEXT_AXIS = [1, 2, 0, 1]
 _AXES2TUPLE = {
     'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzx': (0, 0, 2, 0), 'sxzy': (0, 0, 0, 1),
     'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0), 'syzx': (1, 0, 2, 0), 'syxy': (1, 0, 0, 1),
-    'szxy': (2, 0, 0, 0), 'szxz': (2, 0, 1, 0), 'szx': (2, 0, 2, 0), 'szx': (2, 0, 0, 1),
+    'szxy': (2, 0, 0, 0), 'szxz': (2, 0, 1, 0), 'szx':  (2, 0, 2, 0), 'szx':  (2, 0, 0, 1),
 }
 _TUPLE2AXES = {v: k for k, v in _AXES2TUPLE.items()}
 
 if __name__ == "__main__":
-    # example
     use_differential_kinematics = True  # 通过这个标志位切换使用的方法
 
     robot_des = RobotDescription()
@@ -348,10 +348,10 @@ if __name__ == "__main__":
     joint_commands = [0, 0, 0, 0, 0, 0]  # 初始的关节角度位置
     arm_interface = InterbotixArmUXInterface(robot_des, initial_guesses, joint_commands)
 
-    input_csv = '/home/haku/work/umi_data_deal1/data/demo_session/demo_C3461324973256_2024.06.21_19.26.02.375817/camera_trajectory.csv'
-    output_csv = '/home/haku/work/umi_data_deal1/data/demo_session/demo_C3461324973256_2024.06.21_19.26.02.375817/camera_trajectory_aloha_v3.csv'
-    success_points, failure_points = process_csv(input_csv, output_csv, arm_interface, use_differential_kinematics)
-
-    # 可视化
-    visualize_points(success_points, failure_points)
-
+    base_dir = '/home/haku/Workspace-WSL/umi_data_deal/data/dataset_Put_the_blue_cube_into_the_blue_cup/demos'
+    for subdir, _, _ in os.walk(base_dir):
+        input_csv = os.path.join(subdir, 'camera_trajectory.csv')
+        if os.path.exists(input_csv):
+            output_csv = os.path.join(subdir, 'camera_trajectory_aloha_v3.csv')
+            success_points, failure_points = process_csv(input_csv, output_csv, arm_interface, use_differential_kinematics)
+            # visualize_points(success_points, failure_points)

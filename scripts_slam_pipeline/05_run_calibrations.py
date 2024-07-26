@@ -3,7 +3,7 @@ This script runs SLAM tag and gripper range calibrations for specified session d
 It processes video directories, generates calibration files, and ensures that the necessary input files are present.
 
 Usage:
-    python scripts_slam_pipeline/05_run_calibrations.py data/dataset/raw_videos
+    python scripts_slam_pipeline/05_run_calibrations.py data/dataset
 """
 import pathlib
 import click
